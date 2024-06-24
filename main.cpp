@@ -1,22 +1,26 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <cmath>
+
+#define PI 3.14159265
 
 void framebuffer_resize_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
 const char *vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
-
+"out vec4 vertexColor;\n"
 "void main() {\n"
-"	gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"  gl_Position = vec4(aPos, 1.0);\n"
+"  vertexColor = vec4(0.5, 0.0, 0.0, 1.0);\n"
 "}\0";
 
 const char *fragmentShaderSource = "#version 330 core\n"
 "out vec4 FragColor;\n"
-
+"uniform vec4 ourColor;\n"
 "void main() {\n"
-"FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"  FragColor = ourColor;\n"
 "}\0";
 
 int main() {
@@ -26,7 +30,9 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Hello triangle!", NULL, NULL);
+    //                            DO NOT REMOVE CODE DO NOT WORK WITHOUT THIS
+    //                                                        v
+    GLFWwindow* window = glfwCreateWindow(800, 600, "COLORS!!!1!", NULL, NULL);
 
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << '\n';
@@ -124,6 +130,15 @@ int main() {
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        float timeValue = glfwGetTime();
+        // with the red green and blue values being 120 degres apart the
+        // result should pass trough all the colors of the color wheel
+        float redValue   = (sin(timeValue + (0.0f / 3 * PI)) + 1.0f) / 2.0f;
+        float greenValue = (sin(timeValue + (2.0f / 3 * PI)) + 1.0f) / 2.0f;
+        float blueValue  = (sin(timeValue + (4.0f / 3 * PI)) + 1.0f) / 2.0f;
+        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        glUseProgram(shaderProgram);
+        glUniform4f(vertexColorLocation, redValue, greenValue, blueValue, 1.0f);
 
         glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
