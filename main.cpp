@@ -3,25 +3,12 @@
 #include <iostream>
 #include <cmath>
 
-#define PI 3.14159265
+#include "shader.h"
+
+#define PI 3.14159265f
 
 void framebuffer_resize_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
-
-const char *vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"out vec4 vertexColor;\n"
-"void main() {\n"
-"  gl_Position = vec4(aPos, 1.0);\n"
-"  vertexColor = vec4(0.5, 0.0, 0.0, 1.0);\n"
-"}\0";
-
-const char *fragmentShaderSource = "#version 330 core\n"
-"out vec4 FragColor;\n"
-"uniform vec4 ourColor;\n"
-"void main() {\n"
-"  FragColor = ourColor;\n"
-"}\0";
 
 int main() {
     // setup start
@@ -30,9 +17,7 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    //                            DO NOT REMOVE CODE DO NOT WORK WITHOUT THIS
-    //                                                        v
-    GLFWwindow* window = glfwCreateWindow(800, 600, "COLORS!!!1!", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "Reading Shaders From files", NULL, NULL);
 
     if (window == NULL) {
         std::cout << "Failed to create GLFW window" << '\n';
@@ -48,62 +33,14 @@ int main() {
 
     glfwSetFramebufferSizeCallback(window, framebuffer_resize_callback);
 
-    // vertex shader start
-
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << '\n';
-    }
-
-    // vertex shader end
-    // fragment shader start
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    success;
-    infoLog[512];
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << '\n';
-    }
-
-    // fragment shader end
-    // shader program start
-
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << '\n';
-    }
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    // shader program end
+    Shader shader("vertexShader.glsl", "fragmentShader.glsl");
 
     // buffer start
 
     GLfloat vertices[] = {
         -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f,  0.5f, 0.0f
+         0.5f, -0.5f, 0.0f,
+         0.0f,  0.5f, 0.0f
     };	
 
     unsigned int VBO, VAO; //, EBO;
@@ -122,7 +59,6 @@ int main() {
 
     glBindVertexArray(0);
     // buffer end
-
     while (!glfwWindowShouldClose(window)) {
         processInput(window);
         // draw start
@@ -133,14 +69,24 @@ int main() {
         float timeValue = glfwGetTime();
         // with the red green and blue values being 120 degres apart the
         // result should pass trough all the colors of the color wheel
+        // max(sin(timeValue + 0/3 * PI) + 0.5, 0) * 2/3
+
+        //float redValue   = std::max((float)sin(timeValue + (0.f/3.f) * PI) + 0.5f, 0.0f) * 2/3; 
+        //float greenValue = std::max((float)sin(timeValue + (2.f/3.f) * PI) + 0.5f, 0.0f) * 2/3;
+        //float blueValue  = std::max((float)sin(timeValue + (4.f/3.f) * PI) + 0.5f, 0.0f) * 2/3;
+
+        //float redValue   = std::min(std::max((float)sin(timeValue + (0.f/3.f) * PI) + 0.5f, 0.0f), 1.0f); 
+        //float greenValue = std::min(std::max((float)sin(timeValue + (2.f/3.f) * PI) + 0.5f, 0.0f), 1.0f);
+        //float blueValue  = std::min(std::max((float)sin(timeValue + (4.f/3.f) * PI) + 0.5f, 0.0f), 1.0f);
+
         float redValue   = (sin(timeValue + (0.0f / 3 * PI)) + 1.0f) / 2.0f;
         float greenValue = (sin(timeValue + (2.0f / 3 * PI)) + 1.0f) / 2.0f;
         float blueValue  = (sin(timeValue + (4.0f / 3 * PI)) + 1.0f) / 2.0f;
-        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        glUseProgram(shaderProgram);
+
+        int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
+        shader.use();
         glUniform4f(vertexColorLocation, redValue, greenValue, blueValue, 1.0f);
 
-        glUseProgram(shaderProgram);
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
